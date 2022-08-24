@@ -121,9 +121,10 @@ class AthenaConnectionManager(SQLConnectionManager):
             connection.handle = handle
 
         except Exception as e:
-            logger.debug("Got an error when attempting to open a Athena "
-                         "connection: '{}'"
-                         .format(e))
+            logger.debug(
+                f"Got an error when attempting to open a Athena connection: '{e}'"
+            )
+
             connection.handle = None
             connection.state = "fail"
 
@@ -139,9 +140,9 @@ class AthenaConnectionManager(SQLConnectionManager):
             code = "ERROR"
 
         return AdapterResponse(
-            _message="{} {}".format(code, cursor.rowcount),
+            _message=f"{code} {cursor.rowcount}",
             rows_affected=cursor.rowcount,
-            code=code
+            code=code,
         )
 
     def cancel(self, connection: Connection):
@@ -182,21 +183,20 @@ class AthenaParameterFormatter(Formatter):
 
         kwargs: Optional[List[str]] = None
         if parameters is not None:
-            kwargs = list()
-            if isinstance(parameters, list):
-                for v in parameters:
-
-                    # TODO Review this annoying Decimal hack, unsure if issue in dbt, agate or pyathena
-                    if isinstance(v, Decimal) and v == int(v):
-                        v = int(v)
-
-                    func = self.get(v)
-                    if not func:
-                        raise TypeError("{0} is not defined formatter.".format(type(v)))
-                    kwargs.append(func(self, escaper, v))
-            else:
+            kwargs = []
+            if not isinstance(parameters, list):
                 raise ProgrammingError(
                     "Unsupported parameter "
                     + "(Support for list only): {0}".format(parameters)
                 )
+            for v in parameters:
+
+                # TODO Review this annoying Decimal hack, unsure if issue in dbt, agate or pyathena
+                if isinstance(v, Decimal) and v == int(v):
+                    v = int(v)
+
+                if func := self.get(v):
+                    kwargs.append(func(self, escaper, v))
+                else:
+                    raise TypeError("{0} is not defined formatter.".format(type(v)))
         return (operation % tuple(kwargs)).strip() if kwargs is not None else operation.strip()

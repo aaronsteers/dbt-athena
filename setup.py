@@ -22,7 +22,7 @@ def _dbt_presto_version() -> str:
         match = re.search(_version_pattern, f.read().strip())
         if match is None:
             raise ValueError(f'invalid version at {_version_path}')
-        return match.group(1)
+        return match[1]
 
 
 package_version = _dbt_presto_version()
